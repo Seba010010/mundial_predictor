@@ -1,0 +1,237 @@
+team,estimated_elo,matches,ppg,gd_per_match,known_opponent_matches,confidence
+Italy,1939,97,2.0,1.041,51,high
+Denmark,1910,100,1.88,1.02,49,high
+Russia,1867,75,1.84,1.013,33,high
+Serbia,1786,94,1.638,0.362,41,high
+Poland,1769,96,1.573,0.385,44,high
+Ukraine,1766,91,1.637,0.165,42,high
+Hungary,1758,89,1.551,0.124,32,high
+Greece,1756,84,1.595,0.393,28,high
+Romania,1745,88,1.614,0.466,27,high
+Georgia,1728,86,1.512,0.302,29,high
+Slovenia,1726,88,1.511,0.284,27,high
+Wales,1718,89,1.483,0.18,37,high
+Slovakia,1717,91,1.495,0.231,31,high
+Venezuela,1717,82,1.232,-0.146,52,high
+Peru,1709,97,1.227,-0.186,64,high
+Chile,1706,91,1.198,-0.132,56,high
+Kosovo,1704,85,1.541,0.341,20,high
+Republic of Ireland,1688,84,1.286,0.048,31,high
+Nigeria,1657,104,1.76,0.606,40,high
+Israel,1656,76,1.342,-0.092,23,high
+Finland,1641,92,1.337,-0.087,26,high
+North Macedonia,1637,86,1.465,0.093,17,high
+Mali,1633,79,1.797,0.873,27,high
+Albania,1628,85,1.329,-0.047,24,high
+Burkina Faso,1608,89,1.674,0.427,26,high
+Northern Ireland,1608,80,1.212,-0.2,25,high
+Cameroon,1600,85,1.647,0.494,28,high
+Iceland,1583,102,1.069,-0.412,44,high
+Montenegro,1575,84,1.202,-0.345,23,high
+Malaysia,1556,90,1.8,0.756,8,medium
+Thailand,1550,98,1.724,0.694,8,medium
+Kazakhstan,1544,81,1.136,-0.506,16,high
+Bahrain,1543,110,1.555,0.3,39,high
+Belarus,1541,82,1.146,-0.488,13,high
+Vietnam,1536,87,1.667,0.506,18,high
+Bolivia,1524,89,0.787,-1.022,60,high
+United Arab Emirates,1522,102,1.52,0.412,36,high
+Jamaica,1520,107,1.523,0.318,40,high
+Bulgaria,1519,83,0.976,-0.59,18,high
+Guatemala,1516,94,1.521,0.394,25,high
+Guadeloupe,1516,44,1.591,0.682,4,medium
+Luxembourg,1514,83,0.988,-0.699,24,high
+Suriname,1512,53,1.547,0.642,9,medium
+Angola,1511,79,1.481,0.266,21,high
+Gabon,1507,63,1.476,0.063,16,high
+Guinea,1496,78,1.346,0.051,20,high
+Oman,1494,107,1.598,0.215,41,high
+Latvia,1492,84,0.881,-0.714,16,high
+Gambia,1492,63,1.365,0.095,14,high
+Faroe Islands,1491,80,0.912,-0.8,20,high
+Dominican Republic,1491,59,1.441,0.593,5,medium
+Costa Rica,1489,111,1.342,0.009,65,high
+Zambia,1478,87,1.356,-0.149,25,high
+Azerbaijan,1478,84,0.881,-0.738,19,high
+Puerto Rico,1472,46,1.435,0.37,4,medium
+Kenya,1469,66,1.333,-0.091,13,high
+Guyana,1467,56,1.5,0.214,6,medium
+Indonesia,1466,90,1.4,0.044,19,high
+Armenia,1465,80,0.975,-0.925,16,high
+Tajikistan,1464,67,1.328,0.104,12,high
+Benin,1462,69,1.29,-0.116,19,high
+Honduras,1461,93,1.215,-0.161,42,high
+French Guiana,1455,34,1.412,0.265,1,medium
+Uganda,1453,77,1.312,-0.117,18,high
+Equatorial Guinea,1451,70,1.3,-0.157,18,high
+Guernsey,1450,14,1.786,1.071,0,medium
+Székely Land,1450,13,1.308,0.462,0,medium
+Tamil Eelam,1450,13,1.846,0.154,0,medium
+Padania,1450,11,1.818,1.909,0,medium
+Panjab,1450,9,1.222,1.556,0,low
+Réunion,1450,9,1.667,0.889,0,low
+Saint Barthélemy,1450,8,1.625,0.625,0,low
+Cascadia,1450,7,1.857,1.286,0,low
+Chameria,1450,7,1.571,0.857,0,low
+Kárpátalja,1450,6,2.333,1.667,0,low
+Basque Country,1450,5,2.2,1.2,2,low
+Isle of Wight,1450,4,2.25,0.75,0,low
+Zanzibar,1450,4,2.25,0.5,0,low
+Biafra,1450,3,2.0,0.333,0,low
+Maule Sur,1450,2,3.0,1.0,0,low
+Franconia,1450,1,3.0,1.0,0,low
+Syria,1449,91,1.22,-0.055,29,high
+Mayotte,1446,7,1.571,0.571,0,low
+Rwanda,1445,55,1.127,-0.055,11,high
+China,1444,75,1.333,0.08,30,high
+Raetia,1444,7,1.286,0.714,0,low
+Libya,1442,61,1.295,-0.082,11,high
+Comoros,1441,85,1.224,-0.212,18,high
+Mapuche,1441,2,1.5,0.5,0,low
+Estonia,1440,92,0.837,-1.011,24,high
+Cyprus,1440,82,0.817,-1.037,20,high
+Malta,1439,81,0.889,-1.136,14,high
+El Salvador,1425,102,1.245,-0.167,32,high
+Shetland,1421,11,1.273,0.273,0,medium
+United Koreans in Japan,1421,6,1.167,0.5,0,low
+Madagascar,1417,73,1.192,-0.233,18,high
+Nicaragua,1416,75,1.293,0.107,14,high
+Mozambique,1415,82,1.22,-0.232,19,high
+Togo,1415,58,1.086,-0.207,17,high
+Trinidad and Tobago,1411,87,1.23,-0.115,23,high
+Saint Vincent and the Grenadines,1409,58,1.362,-0.259,2,medium
+Singapore,1408,78,1.359,-0.269,8,medium
+Namibia,1408,71,1.169,-0.296,15,high
+Philippines,1406,68,1.176,-0.221,4,medium
+Lithuania,1405,86,0.663,-1.221,11,high
+Hong Kong,1404,67,1.149,-0.149,15,high
+Orkney,1404,11,1.455,-0.364,0,medium
+Kyrgyzstan,1403,65,1.2,-0.123,16,high
+Ethiopia,1403,58,1.069,-0.293,14,high
+Lebanon,1401,75,1.12,-0.12,22,high
+Kuwait,1400,89,1.191,-0.169,30,high
+Mauritania,1400,80,1.137,-0.4,26,high
+Tanzania,1400,74,1.041,-0.297,24,high
+Saint Martin,1399,34,1.294,-0.294,2,medium
+Malawi,1398,80,1.1,-0.338,15,high
+Palestine,1398,74,1.135,-0.203,30,high
+Saint Kitts and Nevis,1396,56,1.286,-0.304,3,medium
+Sierra Leone,1395,52,1.096,-0.462,11,high
+Moldova,1393,87,0.759,-1.322,20,high
+Botswana,1392,71,1.141,-0.324,19,high
+Sudan,1391,74,1.027,-0.514,24,high
+Zimbabwe,1390,68,1.0,-0.265,18,high
+Gozo,1390,7,1.143,0.0,0,low
+Luhansk PR,1390,2,1.5,-0.5,0,low
+Vatican City,1385,1,1.0,0.0,0,low
+Andorra,1383,84,0.583,-1.31,17,high
+Hitra,1383,7,1.286,-0.429,0,low
+East Turkestan,1383,5,1.2,-0.2,0,low
+New Caledonia,1381,32,1.625,1.031,2,medium
+India,1377,75,1.147,-0.093,10,high
+Guinea-Bissau,1372,62,1.0,-0.468,9,medium
+Belize,1370,51,1.196,-0.431,2,medium
+Saint Lucia,1370,39,1.359,-0.513,5,medium
+Niger,1368,67,0.985,-0.522,17,high
+Burundi,1368,52,0.981,-0.423,11,high
+Martinique,1367,40,1.175,-0.35,10,high
+Bangladesh,1359,71,1.127,-0.563,4,medium
+Turkmenistan,1359,37,1.054,-0.595,9,medium
+Mauritius,1357,52,0.923,-0.519,2,medium
+Menorca,1357,4,0.75,-0.25,0,low
+Bermuda,1352,55,1.127,-0.491,13,high
+Jersey,1350,18,2.444,2.111,0,medium
+Isle of Man,1350,13,2.077,2.538,0,medium
+Ynys Môn,1350,12,2.75,1.417,0,medium
+Abkhazia,1350,11,2.0,1.273,0,medium
+Yorkshire,1350,7,2.286,2.286,0,low
+Parishes of Jersey,1350,3,2.0,2.333,0,low
+Kernow,1350,2,3.0,3.0,0,low
+Catalonia,1350,1,3.0,1.0,0,low
+Elba Island,1350,1,3.0,5.0,0,low
+Surrey,1350,1,3.0,2.0,0,low
+Montserrat,1349,36,1.222,-0.611,3,medium
+Tahiti,1348,28,1.643,0.821,3,medium
+Cuba,1347,68,1.176,-0.544,11,high
+Central African Republic,1344,52,0.981,-0.615,12,high
+North Korea,1340,38,1.105,-0.5,15,high
+Northern Cyprus,1340,6,2.0,1.833,0,low
+Lesotho,1339,69,0.942,-0.725,10,high
+Yoruba Nation,1329,2,0.5,-0.5,0,low
+Dominica,1327,40,1.05,-0.7,2,medium
+Congo,1325,42,0.81,-0.833,9,medium
+Maldives,1320,52,0.981,-0.769,1,medium
+Eswatini,1317,63,0.825,-0.683,15,high
+Liberia,1316,58,0.879,-0.655,18,high
+Hmong,1316,3,1.0,-1.333,0,low
+Kabylia,1314,6,0.833,-1.167,0,low
+Gibraltar,1311,78,0.603,-2.115,17,high
+Western Isles,1310,10,1.0,-0.8,0,medium
+Solomon Islands,1304,44,1.477,0.523,2,medium
+Aruba,1303,39,0.974,-0.897,6,medium
+Afghanistan,1301,39,0.923,-0.923,5,medium
+Nepal,1299,66,0.97,-1.0,6,medium
+Cambodia,1299,59,0.932,-1.051,4,medium
+Yemen,1297,48,0.854,-0.75,14,high
+Eritrea,1296,2,0.0,-1.5,0,low
+Grenada,1293,57,1.035,-0.982,7,medium
+Barbados,1292,58,0.879,-0.862,5,medium
+Ellan Vannin,1287,5,2.0,0.8,0,low
+Sri Lanka,1283,49,0.776,-1.102,3,medium
+South Sudan,1282,49,0.694,-1.061,8,medium
+Papua New Guinea,1282,33,1.515,0.061,1,medium
+Fiji,1278,49,1.347,0.327,2,medium
+South Ossetia,1275,7,2.0,0.571,0,low
+Sint Maarten,1274,35,1.114,-1.486,3,medium
+Sápmi,1266,6,0.5,-1.667,0,low
+Antigua and Barbuda,1265,44,0.955,-1.273,1,medium
+Mongolia,1263,39,0.795,-1.205,2,medium
+Western Armenia,1261,11,1.364,0.636,0,medium
+Cayman Islands,1259,38,0.974,-1.421,1,medium
+Somalia,1259,22,0.409,-1.409,2,medium
+Chad,1256,36,0.5,-1.167,4,medium
+Artsakh,1256,5,2.0,0.2,0,low
+Åland Islands,1249,4,0.25,-1.75,0,low
+Myanmar,1248,67,0.836,-1.597,4,medium
+Aymara,1246,2,0.0,-1.5,0,low
+British Virgin Islands,1238,39,0.692,-1.436,1,medium
+Guam,1233,26,0.538,-1.654,0,medium
+Northern Mariana Islands,1233,9,0.889,-2.889,0,low
+Liechtenstein,1228,79,0.316,-2.291,13,high
+Vanuatu,1225,36,1.139,-0.167,3,medium
+Alderney,1223,7,0.429,-2.429,0,low
+Galicia,1220,1,0.0,-2.0,1,low
+Taiwan,1218,46,0.804,-1.348,5,medium
+Brunei,1213,32,0.969,-2.0,0,medium
+Falkland Islands,1210,4,0.25,-2.5,0,low
+Laos,1207,41,0.561,-1.61,0,medium
+Djibouti,1204,30,0.6,-1.8,4,medium
+Macau,1197,20,0.4,-1.8,0,medium
+United States Virgin Islands,1196,34,0.618,-1.529,2,medium
+Marshall Islands,1195,2,0.0,-2.5,0,low
+Pakistan,1193,30,0.5,-1.7,4,medium
+Bahamas,1175,39,0.692,-1.897,0,medium
+Barawa,1173,10,0.9,-2.4,0,medium
+Turks and Caicos Islands,1171,33,0.97,-2.394,1,medium
+Matabeleland,1162,8,1.375,-0.875,0,low
+Bhutan,1161,28,0.5,-2.429,0,medium
+San Marino,1150,77,0.169,-2.922,12,high
+Samoa,1142,17,1.235,-1.294,1,medium
+Seychelles,1123,50,0.38,-2.44,4,medium
+São Tomé and Príncipe,1116,31,0.419,-1.968,6,medium
+Bonaire,1106,31,1.097,-0.742,0,medium
+Timor-Leste,1101,34,0.5,-2.382,0,medium
+Saint Helena,1098,8,0.0,-4.375,0,low
+Tibet,1097,10,0.2,-2.5,0,medium
+Greenland,1093,4,1.0,-1.75,0,low
+Anguilla,1055,40,0.45,-3.1,1,medium
+West Papua,1002,2,0.5,-3.0,0,low
+Frøya,983,7,0.429,-3.143,0,low
+Cook Islands,964,10,0.6,-2.8,0,medium
+Tuvalu,950,14,0.5,-4.429,0,medium
+American Samoa,950,12,0.083,-6.167,0,medium
+Tonga,950,11,0.545,-3.182,0,medium
+Somaliland,917,1,0.0,-4.0,0,low
+Chagos Islands,900,5,0.0,-5.0,0,low
+Ticino,900,2,0.0,-5.5,0,low
+Two Sicilies,900,2,0.0,-4.5,0,low

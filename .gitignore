@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Local environment and secrets
+.env
+.env.*
+.streamlit/secrets.toml
+
+# OS/editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Local debug helpers
+debug.py
+
+# External/API raw outputs and temporary generated files
+data/sportmonks/raw/
+data/squads_pdf/*.pdf
+data/match_advanced_stats.csv
+data/match_lineups.csv
+data/match_events.csv

@@ -1,0 +1,1 @@
+# World Cup Predictor 2026 - Python Package
