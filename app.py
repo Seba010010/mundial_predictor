@@ -242,7 +242,7 @@ if "result" in st.session_state:
         "titularidad ni minutos esperados."
     )
 
-    st.subheader("Marcadores más probables")
+    st.subheader("Resultados exactos más probables")
 
     scores_df = pd.DataFrame(result["most_likely_scores"])
     scores_df["probability"] = scores_df["probability"].map(
