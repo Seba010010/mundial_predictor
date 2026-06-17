@@ -1,20 +1,54 @@
 import pandas as pd
 import random
 from src.predictor import predict_match
+from bisect import bisect_left
 from collections import Counter
+from functools import lru_cache
 import time
 from typing import Any
 
 
-def simulate_score(result):
-    scores = result["score_probabilities"]
-    selected = random.choices(
-        scores,
-        weights=[s["probability"] for s in scores],
-        k=1
-    )[0]
+@lru_cache(maxsize=1)
+def load_worldcup_groups():
+    groups_df = pd.read_csv("data/groups.csv")
 
-    return selected["home_goals"], selected["away_goals"]
+    return tuple(
+        (group_name, tuple(group_data["team"].tolist()))
+        for group_name, group_data in groups_df.groupby("group")
+    )
+
+
+def build_score_distribution(score_probabilities):
+    scores = []
+    cumulative_probabilities = []
+    cumulative_probability = 0.0
+
+    for score in score_probabilities:
+        cumulative_probability += score["probability"]
+        scores.append((score["home_goals"], score["away_goals"]))
+        cumulative_probabilities.append(cumulative_probability)
+
+    if cumulative_probabilities:
+        cumulative_probabilities[-1] = 1.0
+
+    return scores, cumulative_probabilities
+
+
+def sample_from_distribution(distribution):
+    scores, cumulative_probabilities = distribution
+    selected_index = bisect_left(cumulative_probabilities, random.random())
+    return scores[selected_index]
+
+
+@lru_cache(maxsize=None)
+def get_score_distribution(home, away):
+    result = predict_match(home, away, include_details=False)
+    return build_score_distribution(result["score_probabilities"])
+
+
+def simulate_score(result):
+    distribution = build_score_distribution(result["score_probabilities"])
+    return sample_from_distribution(distribution)
 
 
 def get_head_to_head_tiebreak(team, tied_teams, matches):
@@ -174,12 +208,9 @@ def simulate_group(group_name, teams):
 
 
 def simulate_groups():
-    groups_df = pd.read_csv("data/groups.csv")
-
     results = {}
 
-    for group_name, group_data in groups_df.groupby("group"):
-        teams = group_data["team"].tolist()
+    for group_name, teams in load_worldcup_groups():
         standings, matches = simulate_group(group_name, teams)
 
         results[group_name] = {
@@ -373,23 +404,8 @@ def simulate_knockout_round(teams):
 
 
 def build_cached_score_sampler():
-    score_cache = {}
-
     def sample_score(home, away):
-        key = (home, away)
-
-        if key not in score_cache:
-            result = predict_match(home, away, include_details=False)
-            score_cache[key] = result["score_probabilities"]
-
-        scores = score_cache[key]
-        selected = random.choices(
-            scores,
-            weights=[s["probability"] for s in scores],
-            k=1
-        )[0]
-
-        return selected["home_goals"], selected["away_goals"]
+        return sample_from_distribution(get_score_distribution(home, away))
 
     return sample_score
 
@@ -454,11 +470,9 @@ def simulate_group_with_score_sampler(group_name, teams, sample_score):
 
 
 def simulate_groups_with_score_sampler(sample_score):
-    groups_df = pd.read_csv("data/groups.csv")
     results = {}
 
-    for group_name, group_data in groups_df.groupby("group"):
-        teams = group_data["team"].tolist()
+    for group_name, teams in load_worldcup_groups():
         standings, matches = simulate_group_with_score_sampler(
             group_name,
             teams,
@@ -746,24 +760,7 @@ def simulate_many_world_cups_with_stages(n=1000, verbose=False, progress_callbac
 
 
 def simulate_team_world_cup_path(team_name, n=10000):
-    groups_df = pd.read_csv("data/groups.csv")
-    score_cache = {}
-
-    def sample_score_cached(home, away):
-        key = (home, away)
-
-        if key not in score_cache:
-            result = predict_match(home, away, include_details=False)
-            score_cache[key] = result["score_probabilities"]
-
-        scores = score_cache[key]
-        selected = random.choices(
-            scores,
-            weights=[s["probability"] for s in scores],
-            k=1
-        )[0]
-
-        return selected["home_goals"], selected["away_goals"]
+    sample_score_cached = build_cached_score_sampler()
 
     def simulate_group_cached(group_name, teams):
         table = {
@@ -826,8 +823,7 @@ def simulate_team_world_cup_path(team_name, n=10000):
     def simulate_groups_cached():
         results = {}
 
-        for group_name, group_data in groups_df.groupby("group"):
-            teams = group_data["team"].tolist()
+        for group_name, teams in load_worldcup_groups():
             standings, matches = simulate_group_cached(group_name, teams)
             results[group_name] = {
                 "standings": standings,

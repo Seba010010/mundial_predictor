@@ -6,6 +6,7 @@ from src.simulator import simulate_match
 from src.head_to_head import get_head_to_head
 from src.team_stats import calculate_team_stats, get_recent_form, get_global_goal_average
 
+@lru_cache(maxsize=1)
 def load_teams():
     return pd.read_csv("data/teams.csv")
 
