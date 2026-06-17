@@ -301,11 +301,30 @@ st.header("Simulación Mundial 2026")
 st.subheader("Análisis por selección")
 
 worldcup_teams = pd.read_csv("data/groups.csv")["team"].tolist()
-selected_team_path = st.selectbox(
-    "Selección",
-    worldcup_teams,
-    key="team_path_select"
-)
+
+team_select_col, team_action_col = st.columns([2, 1])
+
+with team_select_col:
+    selected_team_path = st.selectbox(
+        "Selección",
+        worldcup_teams,
+        key="team_path_select"
+    )
+
+with team_action_col:
+    st.write("")
+    st.write("")
+    simulate_team_path = st.button(
+        "Simular rendimiento de selección",
+        type="primary",
+        use_container_width=True
+    )
+
+if simulate_team_path:
+    st.session_state["team_worldcup_path"] = simulate_team_world_cup_path(
+        selected_team_path,
+        n=10000
+    )
 
 squad_profile = get_squad_profile(selected_team_path)
 
@@ -411,12 +430,6 @@ if squad_profile:
         st.dataframe(tallest_df, width="stretch", hide_index=True)
 else:
     st.info("No hay plantilla cargada para esta selección.")
-
-if st.button("Simular rendimiento de selección"):
-    st.session_state["team_worldcup_path"] = simulate_team_world_cup_path(
-        selected_team_path,
-        n=10000
-    )
 
 if "team_worldcup_path" in st.session_state:
     team_path = st.session_state["team_worldcup_path"]
