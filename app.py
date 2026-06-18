@@ -14,6 +14,12 @@ from src.worldcup_simulator import (
     simulate_many_world_cups_with_stages,
     simulate_team_world_cup_path
 )
+from scripts.backtest_model import (
+    TOURNAMENTS_TO_REPORT,
+    build_bin_summary,
+    run_backtest,
+    summarize
+)
 import random
 
 st.set_page_config(
@@ -22,6 +28,51 @@ st.set_page_config(
 )
 
 st.title("Predictor Mundial 2026")
+
+
+@st.cache_data(show_spinner=False)
+def run_cached_backtest(cutoff_date):
+    rows, skipped, total_after_cutoff = run_backtest(cutoff_date)
+    overall_summary = summarize(rows)
+    bins = build_bin_summary(rows).to_dict("records")
+
+    rows_by_tournament = {}
+
+    for row in rows:
+        rows_by_tournament.setdefault(row["tournament"], []).append(row)
+
+    tournament_summaries = []
+
+    for tournament in TOURNAMENTS_TO_REPORT:
+        tournament_summary = summarize(rows_by_tournament.get(tournament, []))
+
+        if tournament_summary:
+            tournament_summaries.append({
+                "tournament": tournament,
+                **tournament_summary
+            })
+
+    high_confidence_misses = sorted(
+        [
+            row for row in rows
+            if (
+                row["favorite_probability"] >= 0.65 and
+                row["favorite_outcome"] != row["actual_outcome"]
+            )
+        ],
+        key=lambda row: row["favorite_probability"],
+        reverse=True
+    )[:20]
+
+    return {
+        "rows": rows,
+        "skipped": skipped,
+        "total_after_cutoff": total_after_cutoff,
+        "overall_summary": overall_summary,
+        "bins": bins,
+        "tournament_summaries": tournament_summaries,
+        "high_confidence_misses": high_confidence_misses,
+    }
 
 st.subheader("Predicción de partido")
 
@@ -293,6 +344,146 @@ if "result" in st.session_state:
     )
 
     st.table(sim_scores_df)
+
+st.divider()
+
+st.header("Validación del modelo")
+st.caption(
+    "Evalúa partidos históricos desde una fecha de corte usando las mismas "
+    "señales del predictor actual."
+)
+
+validation_col1, validation_col2 = st.columns([1, 2])
+
+with validation_col1:
+    backtest_cutoff = st.date_input(
+        "Fecha de corte",
+        value=pd.Timestamp("2022-01-01").date(),
+        key="backtest_cutoff"
+    )
+
+with validation_col2:
+    st.write("")
+    st.write("")
+    run_validation = st.button(
+        "Ejecutar validación del modelo",
+        type="primary",
+        use_container_width=True
+    )
+
+if run_validation:
+    with st.spinner("Ejecutando backtest histórico..."):
+        st.session_state["model_backtest"] = run_cached_backtest(
+            backtest_cutoff.isoformat()
+        )
+
+if "model_backtest" in st.session_state:
+    backtest = st.session_state["model_backtest"]
+    summary = backtest["overall_summary"]
+
+    if summary:
+        coverage = (
+            summary["matches"] /
+            max(backtest["total_after_cutoff"], 1)
+        ) * 100
+
+        metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = (
+            st.columns(5)
+        )
+        metric_col1.metric("Partidos evaluados", f"{summary['matches']:,}")
+        metric_col2.metric("Cobertura", f"{coverage:.1f}%")
+        metric_col3.metric("Accuracy 1X2", f"{summary['accuracy_1x2']}%")
+        metric_col4.metric("Log loss", summary["log_loss"])
+        metric_col5.metric("Brier score", summary["brier_score"])
+
+        st.caption(
+            "Partidos omitidos por falta de soporte de equipos: "
+            f"{backtest['skipped']:,}."
+        )
+
+        validation_tab1, validation_tab2, validation_tab3 = st.tabs([
+            "Confianza",
+            "Torneos",
+            "Errores de alta confianza",
+        ])
+
+        with validation_tab1:
+            bins_df = pd.DataFrame(backtest["bins"]).rename(columns={
+                "bin": "Rango de confianza",
+                "matches": "Partidos",
+                "favorite_accuracy": "Accuracy favorito %"
+            })
+            st.dataframe(bins_df, width="stretch", hide_index=True)
+
+            chart_df = bins_df.set_index("Rango de confianza")
+            st.bar_chart(chart_df["Accuracy favorito %"])
+
+        with validation_tab2:
+            tournaments_df = pd.DataFrame(
+                backtest["tournament_summaries"]
+            ).rename(columns={
+                "tournament": "Torneo",
+                "matches": "Partidos",
+                "accuracy_1x2": "Accuracy 1X2 %",
+                "log_loss": "Log loss",
+                "brier_score": "Brier score",
+                "favorite_accuracy": "Accuracy favorito %",
+                "shootout_matches": "Partidos con penales",
+                "shootout_winner_accuracy": "Accuracy penales %"
+            })
+            st.dataframe(tournaments_df, width="stretch", hide_index=True)
+
+        with validation_tab3:
+            misses_df = pd.DataFrame(backtest["high_confidence_misses"])
+
+            if misses_df.empty:
+                st.success("No hay errores con favorito sobre 65%.")
+            else:
+                misses_df["date"] = pd.to_datetime(
+                    misses_df["date"]
+                ).dt.date
+                misses_df["favorite_probability"] = (
+                    misses_df["favorite_probability"] * 100
+                ).round(2)
+                misses_df["home_probability"] = (
+                    misses_df["home_probability"] * 100
+                ).round(2)
+                misses_df["draw_probability"] = (
+                    misses_df["draw_probability"] * 100
+                ).round(2)
+                misses_df["away_probability"] = (
+                    misses_df["away_probability"] * 100
+                ).round(2)
+                misses_df = misses_df[[
+                    "date",
+                    "tournament",
+                    "home",
+                    "away",
+                    "home_goals",
+                    "away_goals",
+                    "favorite_outcome",
+                    "actual_outcome",
+                    "favorite_probability",
+                    "home_probability",
+                    "draw_probability",
+                    "away_probability",
+                ]].rename(columns={
+                    "date": "Fecha",
+                    "tournament": "Torneo",
+                    "home": "Local",
+                    "away": "Visita",
+                    "home_goals": "Goles local",
+                    "away_goals": "Goles visita",
+                    "favorite_outcome": "Favorito del modelo",
+                    "actual_outcome": "Resultado real",
+                    "favorite_probability": "Confianza favorito %",
+                    "home_probability": "Local %",
+                    "draw_probability": "Empate %",
+                    "away_probability": "Visita %",
+                })
+                st.dataframe(misses_df, width="stretch", hide_index=True)
+    else:
+        st.warning("No hay partidos disponibles para esa fecha de corte.")
 
 st.divider()
 
