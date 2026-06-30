@@ -302,10 +302,19 @@ if "result" in st.session_state:
         "titularidad ni minutos esperados."
     )
 
-    st.subheader("Resultados exactos más probables")
+    st.subheader("Marcadores exactos más probables")
+    st.caption(
+        "Cada fila es un marcador individual. Las probabilidades de Over 1.5 "
+        "suman muchos marcadores distintos, por eso pueden ser altas aunque "
+        "el marcador exacto más probable tenga solo 1 gol."
+    )
 
     scores_df = pd.DataFrame(result["most_likely_scores"])
-    scores_df["probability"] = scores_df["probability"].map(
+    scores_df = scores_df.rename(columns={
+        "score": "Marcador",
+        "probability": "Probabilidad"
+    })
+    scores_df["Probabilidad"] = scores_df["Probabilidad"].map(
         lambda x: f"{x:.2f}%"
     )
 
@@ -345,250 +354,239 @@ if "result" in st.session_state:
 
     st.bar_chart(simulation_chart.set_index("Resultado"))
 
-    st.subheader("Marcadores más repetidos en simulación")
-
-    sim_scores_df = pd.DataFrame(simulation["most_common_scores"])
-    sim_scores_df["percentage"] = sim_scores_df["percentage"].map(
-        lambda x: f"{x:.2f}%"
-    )
-
-    st.table(sim_scores_df)
-
 st.divider()
 
-with st.expander("Validación técnica del modelo", expanded=False):
-    st.subheader("Validación técnica del modelo")
-    st.caption(
-        "Herramienta interna para revisar si el modelo está calibrado con "
-        "partidos históricos. Puedes omitir esta sección si solo quieres "
-        "usar el predictor."
+st.header("Validación del modelo")
+st.caption(
+    "Evalúa partidos históricos desde una fecha de corte usando las mismas "
+    "señales del predictor actual."
+)
+
+validation_col1, validation_col2 = st.columns([1, 2])
+
+with validation_col1:
+    backtest_cutoff = st.date_input(
+        "Fecha de corte",
+        value=pd.Timestamp("2022-01-01").date(),
+        key="backtest_cutoff"
     )
 
-    validation_col1, validation_col2 = st.columns([1, 2])
+with validation_col2:
+    st.write("")
+    st.write("")
+    run_validation = st.button(
+        "Ejecutar validación del modelo",
+        type="primary",
+        use_container_width=True
+    )
 
-    with validation_col1:
-        backtest_cutoff = st.date_input(
-            "Fecha de corte",
-            value=pd.Timestamp("2022-01-01").date(),
-            key="backtest_cutoff"
+if run_validation:
+    with st.spinner("Ejecutando backtest histórico..."):
+        st.session_state["model_backtest"] = run_cached_backtest(
+            backtest_cutoff.isoformat()
         )
 
-    with validation_col2:
-        st.write("")
-        st.write("")
-        run_validation = st.button(
-            "Ejecutar validación del modelo",
-            type="primary",
-            use_container_width=True
+if "model_backtest" in st.session_state:
+    backtest = st.session_state["model_backtest"]
+    summary = backtest["overall_summary"]
+
+    if summary:
+        coverage = (
+            summary["matches"] /
+            max(backtest["total_after_cutoff"], 1)
+        ) * 100
+
+        metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = (
+            st.columns(5)
+        )
+        metric_col1.metric("Partidos evaluados", f"{summary['matches']:,}")
+        metric_col2.metric("Cobertura", f"{coverage:.1f}%")
+        metric_col3.metric("Accuracy 1X2", f"{summary['accuracy_1x2']}%")
+        metric_col4.metric("Log loss", summary["log_loss"])
+        metric_col5.metric("Brier score", summary["brier_score"])
+
+        st.caption(
+            "Partidos omitidos por falta de soporte de equipos: "
+            f"{backtest['skipped']:,}."
         )
 
-    if run_validation:
-        with st.spinner("Ejecutando backtest histórico..."):
-            st.session_state["model_backtest"] = run_cached_backtest(
-                backtest_cutoff.isoformat()
-            )
+        validation_tab1, validation_tab2, validation_tab3, validation_tab4 = st.tabs([
+            "Confianza",
+            "Torneos",
+            "Errores de alta confianza",
+            "Goles",
+        ])
 
-    if "model_backtest" in st.session_state:
-        backtest = st.session_state["model_backtest"]
-        summary = backtest["overall_summary"]
+        with validation_tab1:
+            bins_df = pd.DataFrame(backtest["bins"]).rename(columns={
+                "bin": "Rango de confianza",
+                "matches": "Partidos",
+                "favorite_accuracy": "Accuracy favorito %"
+            })
+            st.dataframe(bins_df, width="stretch", hide_index=True)
 
-        if summary:
-            coverage = (
-                summary["matches"] /
-                max(backtest["total_after_cutoff"], 1)
-            ) * 100
+            chart_df = bins_df.set_index("Rango de confianza")
+            st.bar_chart(chart_df["Accuracy favorito %"])
 
-            metric_col1, metric_col2, metric_col3, metric_col4, metric_col5 = (
-                st.columns(5)
-            )
-            metric_col1.metric("Partidos evaluados", f"{summary['matches']:,}")
-            metric_col2.metric("Cobertura", f"{coverage:.1f}%")
-            metric_col3.metric("Accuracy 1X2", f"{summary['accuracy_1x2']}%")
-            metric_col4.metric("Log loss", summary["log_loss"])
-            metric_col5.metric("Brier score", summary["brier_score"])
+        with validation_tab2:
+            tournaments_df = pd.DataFrame(
+                backtest["tournament_summaries"]
+            ).rename(columns={
+                "tournament": "Torneo",
+                "matches": "Partidos",
+                "accuracy_1x2": "Accuracy 1X2 %",
+                "log_loss": "Log loss",
+                "brier_score": "Brier score",
+                "favorite_accuracy": "Accuracy favorito %",
+                "shootout_matches": "Partidos con penales",
+                "shootout_winner_accuracy": "Accuracy penales %"
+            })
+            st.dataframe(tournaments_df, width="stretch", hide_index=True)
 
-            st.caption(
-                "Partidos omitidos por falta de soporte de equipos: "
-                f"{backtest['skipped']:,}."
-            )
+        with validation_tab3:
+            misses_df = pd.DataFrame(backtest["high_confidence_misses"])
 
-            validation_tab1, validation_tab2, validation_tab3, validation_tab4 = st.tabs([
-                "Confianza",
-                "Torneos",
-                "Errores de alta confianza",
-                "Goles",
-            ])
-
-            with validation_tab1:
-                bins_df = pd.DataFrame(backtest["bins"]).rename(columns={
-                    "bin": "Rango de confianza",
-                    "matches": "Partidos",
-                    "favorite_accuracy": "Accuracy favorito %"
-                })
-                st.dataframe(bins_df, width="stretch", hide_index=True)
-
-                chart_df = bins_df.set_index("Rango de confianza")
-                st.bar_chart(chart_df["Accuracy favorito %"])
-
-            with validation_tab2:
-                tournaments_df = pd.DataFrame(
-                    backtest["tournament_summaries"]
-                ).rename(columns={
+            if misses_df.empty:
+                st.success("No hay errores con favorito sobre 65%.")
+            else:
+                misses_df["date"] = pd.to_datetime(
+                    misses_df["date"]
+                ).dt.date
+                misses_df["favorite_probability"] = (
+                    misses_df["favorite_probability"] * 100
+                ).round(2)
+                misses_df["home_probability"] = (
+                    misses_df["home_probability"] * 100
+                ).round(2)
+                misses_df["draw_probability"] = (
+                    misses_df["draw_probability"] * 100
+                ).round(2)
+                misses_df["away_probability"] = (
+                    misses_df["away_probability"] * 100
+                ).round(2)
+                misses_df = misses_df[[
+                    "date",
+                    "tournament",
+                    "home",
+                    "away",
+                    "home_goals",
+                    "away_goals",
+                    "favorite_outcome",
+                    "actual_outcome",
+                    "favorite_probability",
+                    "home_probability",
+                    "draw_probability",
+                    "away_probability",
+                ]].rename(columns={
+                    "date": "Fecha",
                     "tournament": "Torneo",
-                    "matches": "Partidos",
-                    "accuracy_1x2": "Accuracy 1X2 %",
-                    "log_loss": "Log loss",
-                    "brier_score": "Brier score",
-                    "favorite_accuracy": "Accuracy favorito %",
-                    "shootout_matches": "Partidos con penales",
-                    "shootout_winner_accuracy": "Accuracy penales %"
+                    "home": "Local",
+                    "away": "Visita",
+                    "home_goals": "Goles local",
+                    "away_goals": "Goles visita",
+                    "favorite_outcome": "Favorito del modelo",
+                    "actual_outcome": "Resultado real",
+                    "favorite_probability": "Confianza favorito %",
+                    "home_probability": "Local %",
+                    "draw_probability": "Empate %",
+                    "away_probability": "Visita %",
                 })
-                st.dataframe(tournaments_df, width="stretch", hide_index=True)
+                st.dataframe(misses_df, width="stretch", hide_index=True)
 
-            with validation_tab3:
-                misses_df = pd.DataFrame(backtest["high_confidence_misses"])
+        with validation_tab4:
+            goal_summary = backtest["goal_summary"]
 
-                if misses_df.empty:
-                    st.success("No hay errores con favorito sobre 65%.")
-                else:
-                    misses_df["date"] = pd.to_datetime(
-                        misses_df["date"]
-                    ).dt.date
-                    misses_df["favorite_probability"] = (
-                        misses_df["favorite_probability"] * 100
-                    ).round(2)
-                    misses_df["home_probability"] = (
-                        misses_df["home_probability"] * 100
-                    ).round(2)
-                    misses_df["draw_probability"] = (
-                        misses_df["draw_probability"] * 100
-                    ).round(2)
-                    misses_df["away_probability"] = (
-                        misses_df["away_probability"] * 100
-                    ).round(2)
-                    misses_df = misses_df[[
-                        "date",
-                        "tournament",
-                        "home",
-                        "away",
-                        "home_goals",
-                        "away_goals",
-                        "favorite_outcome",
-                        "actual_outcome",
-                        "favorite_probability",
-                        "home_probability",
-                        "draw_probability",
-                        "away_probability",
-                    ]].rename(columns={
-                        "date": "Fecha",
+            if not goal_summary:
+                st.info("No hay datos de goles para esta validación.")
+            else:
+                goal_metric_col1, goal_metric_col2, goal_metric_col3 = st.columns(3)
+                goal_metric_col1.metric(
+                    "Goles esperados promedio",
+                    goal_summary["expected_goals_avg"]
+                )
+                goal_metric_col2.metric(
+                    "Goles reales promedio",
+                    goal_summary["actual_goals_avg"]
+                )
+                goal_metric_col3.metric(
+                    "Sesgo de goles",
+                    goal_summary["goal_bias"]
+                )
+
+                goal_metric_col4, goal_metric_col5, goal_metric_col6 = st.columns(3)
+                goal_metric_col4.metric(
+                    "MAE total de goles",
+                    goal_summary["total_goals_mae"]
+                )
+                goal_metric_col5.metric(
+                    "Goles del marcador modal",
+                    goal_summary["modal_score_goals_avg"]
+                )
+                goal_metric_col6.metric(
+                    "Acierto marcador exacto",
+                    f"{goal_summary['exact_score_accuracy']}%"
+                )
+
+                goal_market_df = pd.DataFrame([
+                    {
+                        "Mercado": "Over 1.5",
+                        "Predicción promedio %": goal_summary["over_15_predicted"],
+                        "Real %": goal_summary["over_15_actual"],
+                    },
+                    {
+                        "Mercado": "Over 2.5",
+                        "Predicción promedio %": goal_summary["over_25_predicted"],
+                        "Real %": goal_summary["over_25_actual"],
+                    },
+                    {
+                        "Mercado": "Under 1.5",
+                        "Predicción promedio %": goal_summary["under_15_predicted"],
+                        "Real %": goal_summary["under_15_actual"],
+                    },
+                    {
+                        "Mercado": "Ambos anotan",
+                        "Predicción promedio %": goal_summary["both_score_predicted"],
+                        "Real %": goal_summary["both_score_actual"],
+                    },
+                ])
+                st.write("Calibración de mercados de goles")
+                st.dataframe(goal_market_df, width="stretch", hide_index=True)
+
+                goal_detail_tab1, goal_detail_tab2 = st.tabs([
+                    "Por torneo",
+                    "Por rango de goles esperados",
+                ])
+
+                with goal_detail_tab1:
+                    goal_tournament_df = pd.DataFrame(
+                        backtest["goal_tournament_summaries"]
+                    ).rename(columns={
                         "tournament": "Torneo",
-                        "home": "Local",
-                        "away": "Visita",
-                        "home_goals": "Goles local",
-                        "away_goals": "Goles visita",
-                        "favorite_outcome": "Favorito del modelo",
-                        "actual_outcome": "Resultado real",
-                        "favorite_probability": "Confianza favorito %",
-                        "home_probability": "Local %",
-                        "draw_probability": "Empate %",
-                        "away_probability": "Visita %",
+                        "matches": "Partidos",
+                        "expected_goals_avg": "Goles esperados prom.",
+                        "actual_goals_avg": "Goles reales prom.",
+                        "goal_bias": "Sesgo",
+                        "total_goals_mae": "MAE goles",
+                        "modal_score_goals_avg": "Goles marcador modal",
+                        "exact_score_accuracy": "Acierto marcador exacto %",
+                        "over_25_predicted": "Over 2.5 pred. %",
+                        "over_25_actual": "Over 2.5 real %",
                     })
-                    st.dataframe(misses_df, width="stretch", hide_index=True)
+                    st.dataframe(goal_tournament_df, width="stretch", hide_index=True)
 
-            with validation_tab4:
-                goal_summary = backtest["goal_summary"]
-
-                if not goal_summary:
-                    st.info("No hay datos de goles para esta validación.")
-                else:
-                    goal_metric_col1, goal_metric_col2, goal_metric_col3 = st.columns(3)
-                    goal_metric_col1.metric(
-                        "Goles esperados promedio",
-                        goal_summary["expected_goals_avg"]
-                    )
-                    goal_metric_col2.metric(
-                        "Goles reales promedio",
-                        goal_summary["actual_goals_avg"]
-                    )
-                    goal_metric_col3.metric(
-                        "Sesgo de goles",
-                        goal_summary["goal_bias"]
-                    )
-
-                    goal_metric_col4, goal_metric_col5, goal_metric_col6 = st.columns(3)
-                    goal_metric_col4.metric(
-                        "MAE total de goles",
-                        goal_summary["total_goals_mae"]
-                    )
-                    goal_metric_col5.metric(
-                        "Goles del marcador modal",
-                        goal_summary["modal_score_goals_avg"]
-                    )
-                    goal_metric_col6.metric(
-                        "Acierto marcador exacto",
-                        f"{goal_summary['exact_score_accuracy']}%"
-                    )
-
-                    goal_market_df = pd.DataFrame([
-                        {
-                            "Mercado": "Over 1.5",
-                            "Predicción promedio %": goal_summary["over_15_predicted"],
-                            "Real %": goal_summary["over_15_actual"],
-                        },
-                        {
-                            "Mercado": "Over 2.5",
-                            "Predicción promedio %": goal_summary["over_25_predicted"],
-                            "Real %": goal_summary["over_25_actual"],
-                        },
-                        {
-                            "Mercado": "Under 1.5",
-                            "Predicción promedio %": goal_summary["under_15_predicted"],
-                            "Real %": goal_summary["under_15_actual"],
-                        },
-                        {
-                            "Mercado": "Ambos anotan",
-                            "Predicción promedio %": goal_summary["both_score_predicted"],
-                            "Real %": goal_summary["both_score_actual"],
-                        },
-                    ])
-                    st.write("Calibración de mercados de goles")
-                    st.dataframe(goal_market_df, width="stretch", hide_index=True)
-
-                    goal_detail_tab1, goal_detail_tab2 = st.tabs([
-                        "Por torneo",
-                        "Por rango de goles esperados",
-                    ])
-
-                    with goal_detail_tab1:
-                        goal_tournament_df = pd.DataFrame(
-                            backtest["goal_tournament_summaries"]
-                        ).rename(columns={
-                            "tournament": "Torneo",
-                            "matches": "Partidos",
-                            "expected_goals_avg": "Goles esperados prom.",
-                            "actual_goals_avg": "Goles reales prom.",
-                            "goal_bias": "Sesgo",
-                            "total_goals_mae": "MAE goles",
-                            "modal_score_goals_avg": "Goles marcador modal",
-                            "exact_score_accuracy": "Acierto marcador exacto %",
-                            "over_25_predicted": "Over 2.5 pred. %",
-                            "over_25_actual": "Over 2.5 real %",
-                        })
-                        st.dataframe(goal_tournament_df, width="stretch", hide_index=True)
-
-                    with goal_detail_tab2:
-                        goal_bins_df = pd.DataFrame(backtest["goal_bins"]).rename(columns={
-                            "expected_total_bin": "Rango goles esperados",
-                            "matches": "Partidos",
-                            "expected_goals_avg": "Goles esperados prom.",
-                            "actual_goals_avg": "Goles reales prom.",
-                            "goal_bias": "Sesgo",
-                            "over_25_predicted": "Over 2.5 pred. %",
-                            "over_25_actual": "Over 2.5 real %",
-                        })
-                        st.dataframe(goal_bins_df, width="stretch", hide_index=True)
-        else:
-            st.warning("No hay partidos disponibles para esa fecha de corte.")
+                with goal_detail_tab2:
+                    goal_bins_df = pd.DataFrame(backtest["goal_bins"]).rename(columns={
+                        "expected_total_bin": "Rango goles esperados",
+                        "matches": "Partidos",
+                        "expected_goals_avg": "Goles esperados prom.",
+                        "actual_goals_avg": "Goles reales prom.",
+                        "goal_bias": "Sesgo",
+                        "over_25_predicted": "Over 2.5 pred. %",
+                        "over_25_actual": "Over 2.5 real %",
+                    })
+                    st.dataframe(goal_bins_df, width="stretch", hide_index=True)
+    else:
+        st.warning("No hay partidos disponibles para esa fecha de corte.")
 
 st.divider()
 
