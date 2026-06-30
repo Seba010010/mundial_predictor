@@ -97,11 +97,24 @@ def predict_backtest_match(home_team, away_team):
     home_win = sum(prob for (h, a), prob in matrix.items() if h > a)
     draw = sum(prob for (h, a), prob in matrix.items() if h == a)
     away_win = sum(prob for (h, a), prob in matrix.items() if h < a)
+    over_15 = sum(prob for (h, a), prob in matrix.items() if h + a > 1.5)
+    over_25 = sum(prob for (h, a), prob in matrix.items() if h + a > 2.5)
+    under_15 = sum(prob for (h, a), prob in matrix.items() if h + a < 1.5)
+    both_score = sum(prob for (h, a), prob in matrix.items() if h > 0 and a > 0)
+    most_likely_score = max(matrix.items(), key=lambda item: item[1])[0]
 
     return {
+        "home_lambda": home_lambda,
+        "away_lambda": away_lambda,
         "home_win": home_win * 100,
         "draw": draw * 100,
         "away_win": away_win * 100,
+        "over_15": over_15,
+        "over_25": over_25,
+        "under_15": under_15,
+        "both_score": both_score,
+        "predicted_home_goals": most_likely_score[0],
+        "predicted_away_goals": most_likely_score[1],
     }
 
 
@@ -193,6 +206,151 @@ def build_bin_summary(rows):
     return pd.DataFrame(bin_rows)
 
 
+
+def clean_number(value):
+    if value is None:
+        return None
+
+    return float(value)
+
+
+def summarize_goals(rows):
+    if not rows:
+        return None
+
+    total = len(rows)
+    expected_totals = [row["expected_total_goals"] for row in rows]
+    actual_totals = [row["actual_total_goals"] for row in rows]
+    exact_scores = sum(
+        row["predicted_home_goals"] == row["home_goals"] and
+        row["predicted_away_goals"] == row["away_goals"]
+        for row in rows
+    )
+
+    return {
+        "matches": total,
+        "expected_goals_avg": clean_number(round(sum(expected_totals) / total, 3)),
+        "actual_goals_avg": clean_number(round(sum(actual_totals) / total, 3)),
+        "goal_bias": clean_number(round(
+            sum(
+                expected - actual
+                for expected, actual in zip(expected_totals, actual_totals)
+            ) / total,
+            3
+        )),
+        "total_goals_mae": clean_number(round(
+            sum(
+                abs(expected - actual)
+                for expected, actual in zip(expected_totals, actual_totals)
+            ) / total,
+            3
+        )),
+        "modal_score_goals_avg": clean_number(round(
+            sum(row["predicted_total_goals"] for row in rows) / total,
+            3
+        )),
+        "exact_score_accuracy": round(exact_scores / total * 100, 2),
+        "over_15_predicted": clean_number(round(
+            sum(row["over_15_probability"] for row in rows) / total * 100,
+            2
+        )),
+        "over_15_actual": clean_number(round(
+            sum(row["actual_over_15"] for row in rows) / total * 100,
+            2
+        )),
+        "over_25_predicted": clean_number(round(
+            sum(row["over_25_probability"] for row in rows) / total * 100,
+            2
+        )),
+        "over_25_actual": clean_number(round(
+            sum(row["actual_over_25"] for row in rows) / total * 100,
+            2
+        )),
+        "under_15_predicted": clean_number(round(
+            sum(row["under_15_probability"] for row in rows) / total * 100,
+            2
+        )),
+        "under_15_actual": clean_number(round(
+            sum(row["actual_under_15"] for row in rows) / total * 100,
+            2
+        )),
+        "both_score_predicted": clean_number(round(
+            sum(row["both_score_probability"] for row in rows) / total * 100,
+            2
+        )),
+        "both_score_actual": clean_number(round(
+            sum(row["actual_both_score"] for row in rows) / total * 100,
+            2
+        )),
+    }
+
+
+def build_goal_bin_summary(rows):
+    if not rows:
+        return pd.DataFrame()
+
+    goal_bins = [
+        ("0-1.5", 0, 1.5),
+        ("1.5-2.0", 1.5, 2.0),
+        ("2.0-2.5", 2.0, 2.5),
+        ("2.5-3.0", 2.5, 3.0),
+        ("3.0-4.0", 3.0, 4.0),
+        ("4.0+", 4.0, float("inf")),
+    ]
+    bin_rows = []
+
+    for label, lower, upper in goal_bins:
+        current = [
+            row for row in rows
+            if row["expected_total_goals"] > lower and
+            row["expected_total_goals"] <= upper
+        ]
+
+        if not current:
+            bin_rows.append({
+                "expected_total_bin": label,
+                "matches": 0,
+                "expected_goals_avg": None,
+                "actual_goals_avg": None,
+                "goal_bias": None,
+                "over_25_predicted": None,
+                "over_25_actual": None,
+            })
+            continue
+
+        goal_summary = summarize_goals(current)
+        bin_rows.append({
+            "expected_total_bin": label,
+            "matches": goal_summary["matches"],
+            "expected_goals_avg": goal_summary["expected_goals_avg"],
+            "actual_goals_avg": goal_summary["actual_goals_avg"],
+            "goal_bias": goal_summary["goal_bias"],
+            "over_25_predicted": goal_summary["over_25_predicted"],
+            "over_25_actual": goal_summary["over_25_actual"],
+        })
+
+    return pd.DataFrame(bin_rows)
+
+
+def build_goal_tournament_summary(rows):
+    rows_by_tournament = {}
+
+    for row in rows:
+        rows_by_tournament.setdefault(row["tournament"], []).append(row)
+
+    tournament_rows = []
+
+    for tournament in TOURNAMENTS_TO_REPORT:
+        goal_summary = summarize_goals(rows_by_tournament.get(tournament, []))
+
+        if goal_summary:
+            tournament_rows.append({
+                "tournament": tournament,
+                **goal_summary,
+            })
+
+    return pd.DataFrame(tournament_rows)
+
 def run_backtest(cutoff_date):
     matches = pd.read_csv(MATCHES_PATH)
     matches["date"] = pd.to_datetime(matches["date"])
@@ -244,6 +402,13 @@ def run_backtest(cutoff_date):
         probabilities = predicted_probabilities(prediction)
         outcome = actual_outcome(match)
         penalties_outcome = shootout_outcome(match)
+        home_goals = int(match["home_goals"])
+        away_goals = int(match["away_goals"])
+        actual_total_goals = home_goals + away_goals
+        predicted_total_goals = (
+            prediction["predicted_home_goals"] +
+            prediction["predicted_away_goals"]
+        )
         predicted_outcome = max(probabilities, key=probabilities.get)
         favorite_outcome = predicted_outcome
         favorite_probability = probabilities[favorite_outcome]
@@ -257,8 +422,18 @@ def run_backtest(cutoff_date):
             "tournament": match["tournament"],
             "home": match["home"],
             "away": match["away"],
-            "home_goals": int(match["home_goals"]),
-            "away_goals": int(match["away_goals"]),
+            "home_goals": home_goals,
+            "away_goals": away_goals,
+            "expected_home_goals": prediction["home_lambda"],
+            "expected_away_goals": prediction["away_lambda"],
+            "expected_total_goals": (
+                prediction["home_lambda"] +
+                prediction["away_lambda"]
+            ),
+            "actual_total_goals": actual_total_goals,
+            "predicted_home_goals": prediction["predicted_home_goals"],
+            "predicted_away_goals": prediction["predicted_away_goals"],
+            "predicted_total_goals": predicted_total_goals,
             "actual_outcome": outcome,
             "shootout_outcome": penalties_outcome,
             "predicted_outcome": predicted_outcome,
@@ -269,6 +444,14 @@ def run_backtest(cutoff_date):
             "draw_probability": probabilities["draw"],
             "away_probability": probabilities["away"],
             "favorite_bin": probability_bin(favorite_probability),
+            "over_15_probability": prediction["over_15"],
+            "over_25_probability": prediction["over_25"],
+            "under_15_probability": prediction["under_15"],
+            "both_score_probability": prediction["both_score"],
+            "actual_over_15": actual_total_goals > 1.5,
+            "actual_over_25": actual_total_goals > 2.5,
+            "actual_under_15": actual_total_goals < 1.5,
+            "actual_both_score": home_goals > 0 and away_goals > 0,
             "log_loss": -math.log(outcome_probability),
             "brier_score": brier_score(probabilities, outcome),
         })

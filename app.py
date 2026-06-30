@@ -17,8 +17,11 @@ from src.worldcup_simulator import (
 from scripts.backtest_model import (
     TOURNAMENTS_TO_REPORT,
     build_bin_summary,
+    build_goal_bin_summary,
+    build_goal_tournament_summary,
     run_backtest,
-    summarize
+    summarize,
+    summarize_goals
 )
 import random
 
@@ -34,7 +37,10 @@ st.title("Predictor Mundial 2026")
 def run_cached_backtest(cutoff_date):
     rows, skipped, total_after_cutoff = run_backtest(cutoff_date)
     overall_summary = summarize(rows)
+    goal_summary = summarize_goals(rows)
     bins = build_bin_summary(rows).to_dict("records")
+    goal_bins = build_goal_bin_summary(rows).to_dict("records")
+    goal_tournament_summaries = build_goal_tournament_summary(rows).to_dict("records")
 
     rows_by_tournament = {}
 
@@ -69,8 +75,11 @@ def run_cached_backtest(cutoff_date):
         "skipped": skipped,
         "total_after_cutoff": total_after_cutoff,
         "overall_summary": overall_summary,
+        "goal_summary": goal_summary,
         "bins": bins,
+        "goal_bins": goal_bins,
         "tournament_summaries": tournament_summaries,
+        "goal_tournament_summaries": goal_tournament_summaries,
         "high_confidence_misses": high_confidence_misses,
     }
 
@@ -401,10 +410,11 @@ if "model_backtest" in st.session_state:
             f"{backtest['skipped']:,}."
         )
 
-        validation_tab1, validation_tab2, validation_tab3 = st.tabs([
+        validation_tab1, validation_tab2, validation_tab3, validation_tab4 = st.tabs([
             "Confianza",
             "Torneos",
             "Errores de alta confianza",
+            "Goles",
         ])
 
         with validation_tab1:
@@ -482,6 +492,99 @@ if "model_backtest" in st.session_state:
                     "away_probability": "Visita %",
                 })
                 st.dataframe(misses_df, width="stretch", hide_index=True)
+
+        with validation_tab4:
+            goal_summary = backtest["goal_summary"]
+
+            if not goal_summary:
+                st.info("No hay datos de goles para esta validación.")
+            else:
+                goal_metric_col1, goal_metric_col2, goal_metric_col3 = st.columns(3)
+                goal_metric_col1.metric(
+                    "Goles esperados promedio",
+                    goal_summary["expected_goals_avg"]
+                )
+                goal_metric_col2.metric(
+                    "Goles reales promedio",
+                    goal_summary["actual_goals_avg"]
+                )
+                goal_metric_col3.metric(
+                    "Sesgo de goles",
+                    goal_summary["goal_bias"]
+                )
+
+                goal_metric_col4, goal_metric_col5, goal_metric_col6 = st.columns(3)
+                goal_metric_col4.metric(
+                    "MAE total de goles",
+                    goal_summary["total_goals_mae"]
+                )
+                goal_metric_col5.metric(
+                    "Goles del marcador modal",
+                    goal_summary["modal_score_goals_avg"]
+                )
+                goal_metric_col6.metric(
+                    "Acierto marcador exacto",
+                    f"{goal_summary['exact_score_accuracy']}%"
+                )
+
+                goal_market_df = pd.DataFrame([
+                    {
+                        "Mercado": "Over 1.5",
+                        "Predicción promedio %": goal_summary["over_15_predicted"],
+                        "Real %": goal_summary["over_15_actual"],
+                    },
+                    {
+                        "Mercado": "Over 2.5",
+                        "Predicción promedio %": goal_summary["over_25_predicted"],
+                        "Real %": goal_summary["over_25_actual"],
+                    },
+                    {
+                        "Mercado": "Under 1.5",
+                        "Predicción promedio %": goal_summary["under_15_predicted"],
+                        "Real %": goal_summary["under_15_actual"],
+                    },
+                    {
+                        "Mercado": "Ambos anotan",
+                        "Predicción promedio %": goal_summary["both_score_predicted"],
+                        "Real %": goal_summary["both_score_actual"],
+                    },
+                ])
+                st.write("Calibración de mercados de goles")
+                st.dataframe(goal_market_df, width="stretch", hide_index=True)
+
+                goal_detail_tab1, goal_detail_tab2 = st.tabs([
+                    "Por torneo",
+                    "Por rango de goles esperados",
+                ])
+
+                with goal_detail_tab1:
+                    goal_tournament_df = pd.DataFrame(
+                        backtest["goal_tournament_summaries"]
+                    ).rename(columns={
+                        "tournament": "Torneo",
+                        "matches": "Partidos",
+                        "expected_goals_avg": "Goles esperados prom.",
+                        "actual_goals_avg": "Goles reales prom.",
+                        "goal_bias": "Sesgo",
+                        "total_goals_mae": "MAE goles",
+                        "modal_score_goals_avg": "Goles marcador modal",
+                        "exact_score_accuracy": "Acierto marcador exacto %",
+                        "over_25_predicted": "Over 2.5 pred. %",
+                        "over_25_actual": "Over 2.5 real %",
+                    })
+                    st.dataframe(goal_tournament_df, width="stretch", hide_index=True)
+
+                with goal_detail_tab2:
+                    goal_bins_df = pd.DataFrame(backtest["goal_bins"]).rename(columns={
+                        "expected_total_bin": "Rango goles esperados",
+                        "matches": "Partidos",
+                        "expected_goals_avg": "Goles esperados prom.",
+                        "actual_goals_avg": "Goles reales prom.",
+                        "goal_bias": "Sesgo",
+                        "over_25_predicted": "Over 2.5 pred. %",
+                        "over_25_actual": "Over 2.5 real %",
+                    })
+                    st.dataframe(goal_bins_df, width="stretch", hide_index=True)
     else:
         st.warning("No hay partidos disponibles para esa fecha de corte.")
 
